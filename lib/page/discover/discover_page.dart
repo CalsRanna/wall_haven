@@ -1,10 +1,8 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:signals/signals_flutter.dart';
 import '../../view_model/discover_view_model.dart';
-import '../../router/router.gr.dart';
-import 'wallpaper_grid.dart';
+import 'wallpaper_list_tab.dart';
 
 @RoutePage()
 class DiscoverPage extends StatefulWidget {
@@ -14,93 +12,75 @@ class DiscoverPage extends StatefulWidget {
   State<DiscoverPage> createState() => _DiscoverPageState();
 }
 
-class _DiscoverPageState extends State<DiscoverPage> {
+class _DiscoverPageState extends State<DiscoverPage>
+    with SingleTickerProviderStateMixin {
   final viewModel = GetIt.instance.get<DiscoverViewModel>();
+  late final TabController _tabController;
+  late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: viewModel.currentIndex.value,
+    );
+    _pageController = PageController(initialPage: viewModel.currentIndex.value);
+
+    _tabController.addListener(_onTabChanged);
     viewModel.initSignals();
+  }
+
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging) return;
+    final index = _tabController.index;
+    viewModel.onPageChanged(index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _onPageChanged(int index) {
+    viewModel.onPageChanged(index);
+    _tabController.animateTo(index);
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Sorting tabs
-        Watch((context) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(
-                  value: 'date_added',
-                  label: Text('Latest'),
-                  icon: Icon(Icons.access_time),
-                ),
-                ButtonSegment(
-                  value: 'views',
-                  label: Text('Popular'),
-                  icon: Icon(Icons.trending_up),
-                ),
-                ButtonSegment(
-                  value: 'random',
-                  label: Text('Random'),
-                  icon: Icon(Icons.shuffle),
-                ),
-              ],
-              selected: {viewModel.sorting.value},
-              onSelectionChanged: (selected) {
-                viewModel.changeSorting(selected.first);
-              },
-            ),
-          );
-        }),
+        // TabBar
+        TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.access_time), text: 'Latest'),
+            Tab(icon: Icon(Icons.trending_up), text: 'Popular'),
+            Tab(icon: Icon(Icons.shuffle), text: 'Random'),
+          ],
+        ),
 
-        // Wallpaper grid
+        // PageView with three tabs
         Expanded(
-          child: Watch((context) {
-            if (viewModel.error.value != null &&
-                viewModel.wallpapers.value.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48),
-                    const SizedBox(height: 16),
-                    Text(viewModel.error.value!),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: viewModel.refresh,
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            if (viewModel.isLoading.value &&
-                viewModel.wallpapers.value.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (viewModel.wallpapers.value.isEmpty) {
-              return const Center(child: Text('No wallpapers'));
-            }
-
-            return RefreshIndicator(
-              onRefresh: viewModel.refresh,
-              child: WallpaperGrid(
-                wallpapers: viewModel.wallpapers.value,
-                onLoadMore: viewModel.loadMore,
-                hasMore: viewModel.hasMore.value,
-                isLoading: viewModel.isLoading.value,
-                onTap: (wallpaper) {
-                  context.router.push(DetailRoute(wallpaperId: wallpaper.id));
-                },
-              ),
-            );
-          }),
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            children: [
+              WallpaperListTab(viewModel: viewModel.latestViewModel),
+              WallpaperListTab(viewModel: viewModel.popularViewModel),
+              WallpaperListTab(viewModel: viewModel.randomViewModel),
+            ],
+          ),
         ),
       ],
     );

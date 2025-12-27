@@ -85,16 +85,16 @@ class _DetailPageState extends State<DetailPage> {
       LoggerUtil.instance.i('Image saved: ${_wallpaper!.id}');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image saved to gallery')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Image saved to gallery')));
       }
     } catch (e) {
       LoggerUtil.instance.e('Failed to save image', e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
       }
     } finally {
       if (mounted) {
@@ -149,9 +149,9 @@ class _DetailPageState extends State<DetailPage> {
     } catch (e) {
       LoggerUtil.instance.e('Failed to set wallpaper', e);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed: $e')));
       }
     }
   }
@@ -171,9 +171,9 @@ class _DetailPageState extends State<DetailPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed: $e')));
       }
     }
   }
@@ -233,7 +233,7 @@ class _DetailPageState extends State<DetailPage> {
             expandedHeight: imageHeight,
             pinned: true,
             stretch: true,
-            backgroundColor: Colors.black,
+            // backgroundColor: Colors.black,
             iconTheme: const IconThemeData(color: Colors.white),
             actions: [
               // Favorite button
@@ -275,18 +275,9 @@ class _DetailPageState extends State<DetailPage> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // Thumbnail as placeholder
-                      CachedNetworkImage(
-                        imageUrl: wallpaper.thumbs.large,
-                        fit: BoxFit.cover,
-                      ),
-                      // Full resolution image
-                      CachedNetworkImage(
+                      _ProgressiveImage(
                         imageUrl: wallpaper.path,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const SizedBox.shrink(),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error, color: Colors.white),
+                        thumbUrl: wallpaper.thumbs.large,
                       ),
                       // Tap indicator
                       Positioned(
@@ -335,93 +326,119 @@ class _DetailPageState extends State<DetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Resolution and file info
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _InfoRow(
-                            icon: Icons.aspect_ratio,
-                            label: 'Resolution',
-                            value: wallpaper.resolution,
-                          ),
-                          const Divider(),
-                          _InfoRow(
-                            icon: Icons.storage,
-                            label: 'File Size',
-                            value: wallpaper.fileSizeFormatted,
-                          ),
-                          const Divider(),
-                          _InfoRow(
-                            icon: Icons.image,
-                            label: 'File Type',
-                            value: wallpaper.fileType.toUpperCase(),
-                          ),
-                          const Divider(),
-                          _InfoRow(
-                            icon: Icons.visibility,
-                            label: 'Views',
-                            value: '${wallpaper.views}',
-                          ),
-                          const Divider(),
-                          _InfoRow(
-                            icon: Icons.favorite,
-                            label: 'Favorites',
-                            value: '${wallpaper.favorites}',
-                          ),
-                        ],
+                  // Stats grid
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.aspect_ratio,
+                          label: 'Resolution',
+                          value: wallpaper.resolution,
+                        ),
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.storage,
+                          label: 'Size',
+                          value: wallpaper.fileSizeFormatted,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.visibility_outlined,
+                          label: 'Views',
+                          value: _formatNumber(wallpaper.views),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          icon: Icons.favorite_outline,
+                          label: 'Favorites',
+                          value: _formatNumber(wallpaper.favorites),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Colors section
+                  Text(
+                    'Colors',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 48,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: wallpaper.colors.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final color = wallpaper.colors[index];
+                        final colorValue =
+                            int.parse(color.replaceFirst('#', ''), radix: 16) +
+                            0xFF000000;
+                        return GestureDetector(
+                          onTap: () {
+                            Clipboard.setData(ClipboardData(text: color));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Copied: $color'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Color(colorValue),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(
+                                    colorValue,
+                                  ).withValues(alpha: 0.4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
 
-                  const SizedBox(height: 16),
-
-                  // Colors
-                  Text('Colors', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: wallpaper.colors.map((color) {
-                      final colorValue =
-                          int.parse(color.replaceFirst('#', ''), radix: 16) +
-                              0xFF000000;
-                      return GestureDetector(
-                        onTap: () {
-                          Clipboard.setData(ClipboardData(text: color));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Copied: $color')),
-                          );
-                        },
-                        child: Tooltip(
-                          message: color,
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Color(colorValue),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-
-                  // Tags
+                  // Tags section
                   if (wallpaper.tags != null && wallpaper.tags!.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Text('Tags', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Tags',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: wallpaper.tags!.map((tag) {
                         return ActionChip(
                           label: Text(tag.name),
-                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
                           onPressed: () {
                             context.router.push(SearchRoute(query: tag.name));
                           },
@@ -442,12 +459,21 @@ class _DetailPageState extends State<DetailPage> {
   }
 }
 
-class _InfoRow extends StatelessWidget {
+String _formatNumber(int number) {
+  if (number >= 1000000) {
+    return '${(number / 1000000).toStringAsFixed(1)}M';
+  } else if (number >= 1000) {
+    return '${(number / 1000).toStringAsFixed(1)}K';
+  }
+  return number.toString();
+}
+
+class _StatCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
 
-  const _InfoRow({
+  const _StatCard({
     required this.icon,
     required this.label,
     required this.value,
@@ -455,14 +481,48 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey),
-        const SizedBox(width: 8),
-        Text(label, style: const TextStyle(color: Colors.grey)),
-        const Spacer(),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
-      ],
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 20, color: colorScheme.onPrimaryContainer),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -472,10 +532,7 @@ class _FullscreenImageView extends StatelessWidget {
   final String imageUrl;
   final String thumbUrl;
 
-  const _FullscreenImageView({
-    required this.imageUrl,
-    required this.thumbUrl,
-  });
+  const _FullscreenImageView({required this.imageUrl, required this.thumbUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -520,6 +577,67 @@ class _FullscreenImageView extends StatelessWidget {
           initialScale: PhotoViewComputedScale.contained,
           backgroundDecoration: const BoxDecoration(color: Colors.black),
         ),
+      ),
+    );
+  }
+}
+
+/// Progressive image loader with thumbnail placeholder and progress indicator
+/// Keeps track of download completion to avoid flickering
+class _ProgressiveImage extends StatefulWidget {
+  final String imageUrl;
+  final String thumbUrl;
+
+  const _ProgressiveImage({required this.imageUrl, required this.thumbUrl});
+
+  @override
+  State<_ProgressiveImage> createState() => _ProgressiveImageState();
+}
+
+class _ProgressiveImageState extends State<_ProgressiveImage> {
+  bool _downloadComplete = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return CachedNetworkImage(
+      imageUrl: widget.imageUrl,
+      fit: BoxFit.cover,
+      progressIndicatorBuilder: (context, url, progress) {
+        // Once download reaches 100%, mark as complete and never show indicator again
+        if (progress.progress != null && progress.progress! >= 1) {
+          _downloadComplete = true;
+        }
+
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            // Thumbnail as background
+            CachedNetworkImage(imageUrl: widget.thumbUrl, fit: BoxFit.cover),
+            // Progress indicator at bottom left (hidden once download complete)
+            if (!_downloadComplete)
+              Positioned(
+                left: 16,
+                bottom: 16,
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    value: progress.progress,
+                    strokeWidth: 4,
+                    color: Colors.white,
+                    backgroundColor: Colors.white24,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+      errorWidget: (context, url, error) => Stack(
+        fit: StackFit.expand,
+        children: [
+          CachedNetworkImage(imageUrl: widget.thumbUrl, fit: BoxFit.cover),
+          const Center(child: Icon(Icons.error, color: Colors.white)),
+        ],
       ),
     );
   }

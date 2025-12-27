@@ -5,6 +5,7 @@ import '../model/tag_entity.dart';
 import '../model/search_result_entity.dart';
 import '../util/rate_limiter.dart';
 import '../util/logger_util.dart';
+import '../util/api_cache_util.dart';
 
 /// API Exception
 class ApiException implements Exception {
@@ -108,7 +109,22 @@ class WallHavenApiService {
 
   /// Get wallpaper details
   Future<WallpaperEntity> getWallpaper(String id) async {
+    final url = '$baseUrl/w/$id';
+
+    // 1. Try to get from cache
+    final cached = await ApiCacheUtil.instance.get(url);
+    if (cached != null) {
+      LoggerUtil.instance.i('Wallpaper $id loaded from cache');
+      return WallpaperEntity.fromJson(cached['data'] as Map<String, dynamic>);
+    }
+
+    // 2. Fetch from network
     final result = await _get('/w/$id');
+
+    // 3. Save to cache
+    await ApiCacheUtil.instance.set(url, result);
+
+    // 4. Return parsed entity
     return WallpaperEntity.fromJson(result['data'] as Map<String, dynamic>);
   }
 

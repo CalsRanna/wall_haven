@@ -6,6 +6,7 @@ import 'di.dart';
 import 'router/router.dart';
 import 'util/shared_preference_util.dart';
 import 'util/logger_util.dart';
+import 'util/api_cache_util.dart';
 import 'view_model/setting_view_model.dart';
 import 'service/wall_haven_api_service.dart';
 
@@ -14,6 +15,9 @@ void main() async {
 
   // Initialize database
   await Database.instance.ensureInitialized();
+
+  // Initialize API cache
+  await ApiCacheUtil.instance.ensureInitialized();
 
   // Initialize preferences
   await SharedPreferenceUtil.instance.ensureInitialized();
@@ -58,7 +62,7 @@ class WallHavenApp extends StatelessWidget {
             seedColor: Colors.teal,
             brightness: Brightness.light,
           ),
-          fontFamily: 'WireOne',
+          fontFamily: 'Exo',
         ),
         darkTheme: ThemeData(
           useMaterial3: true,
@@ -66,7 +70,7 @@ class WallHavenApp extends StatelessWidget {
             seedColor: Colors.teal,
             brightness: Brightness.dark,
           ),
-          fontFamily: 'WireOne',
+          fontFamily: 'Exo',
         ),
         themeMode: themeMode,
         routerConfig: appRouter.config(),

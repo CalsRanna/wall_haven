@@ -4,8 +4,12 @@ import '../model/wallpaper_entity.dart';
 import '../service/wall_haven_api_service.dart';
 import '../util/logger_util.dart';
 
-class DiscoverViewModel {
+/// ViewModel for a single sorting tab (Latest/Popular/Random)
+class DiscoverTabViewModel {
   final _apiService = GetIt.instance.get<WallHavenApiService>();
+  final String sorting;
+
+  DiscoverTabViewModel({required this.sorting});
 
   // Reactive state
   final wallpapers = listSignal<WallpaperEntity>([]);
@@ -13,13 +17,13 @@ class DiscoverViewModel {
   final error = signal<String?>(null);
   final currentPage = signal(1);
   final hasMore = signal(true);
-  final sorting = signal('date_added');
   final categories = signal('111');
 
-  // Computed property
-  late final totalLoaded = computed(() => wallpapers.value.length);
+  bool _initialized = false;
 
-  Future<void> initSignals() async {
+  Future<void> ensureInitialized() async {
+    if (_initialized) return;
+    _initialized = true;
     await loadWallpapers();
   }
 
@@ -31,7 +35,7 @@ class DiscoverViewModel {
 
     try {
       final result = await _apiService.search(
-        sorting: sorting.value,
+        sorting: sorting,
         categories: categories.value,
         page: currentPage.value,
       );
@@ -44,11 +48,11 @@ class DiscoverViewModel {
 
       hasMore.value = result.meta.currentPage < result.meta.lastPage;
       LoggerUtil.instance.i(
-        'Loaded wallpapers: page ${currentPage.value}, total ${result.meta.total}',
+        'Loaded wallpapers [$sorting]: page ${currentPage.value}, total ${result.meta.total}',
       );
     } catch (e) {
       error.value = e.toString();
-      LoggerUtil.instance.e('Failed to load wallpapers', e);
+      LoggerUtil.instance.e('Failed to load wallpapers [$sorting]', e);
     } finally {
       isLoading.value = false;
     }
@@ -65,18 +69,43 @@ class DiscoverViewModel {
     hasMore.value = true;
     await loadWallpapers();
   }
+}
 
-  void changeSorting(String newSorting) {
-    if (sorting.value == newSorting) return;
-    sorting.value = newSorting;
-    currentPage.value = 1;
-    loadWallpapers();
+/// Main ViewModel managing all three tabs
+class DiscoverViewModel {
+  final latestViewModel = DiscoverTabViewModel(sorting: 'date_added');
+  final popularViewModel = DiscoverTabViewModel(sorting: 'views');
+  final randomViewModel = DiscoverTabViewModel(sorting: 'random');
+
+  final currentIndex = signal(0);
+
+  DiscoverTabViewModel get currentTab {
+    return switch (currentIndex.value) {
+      0 => latestViewModel,
+      1 => popularViewModel,
+      2 => randomViewModel,
+      _ => latestViewModel,
+    };
   }
 
-  void changeCategories(String newCategories) {
-    if (categories.value == newCategories) return;
-    categories.value = newCategories;
-    currentPage.value = 1;
-    loadWallpapers();
+  Future<void> initSignals() async {
+    // Only initialize the first tab on startup
+    await latestViewModel.ensureInitialized();
+  }
+
+  void onPageChanged(int index) {
+    currentIndex.value = index;
+    // Initialize the tab when switched to
+    switch (index) {
+      case 0:
+        latestViewModel.ensureInitialized();
+        break;
+      case 1:
+        popularViewModel.ensureInitialized();
+        break;
+      case 2:
+        randomViewModel.ensureInitialized();
+        break;
+    }
   }
 }

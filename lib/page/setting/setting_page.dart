@@ -4,6 +4,8 @@ import 'package:get_it/get_it.dart';
 import 'package:signals/signals_flutter.dart';
 import '../../view_model/setting_view_model.dart';
 import '../../service/wall_haven_api_service.dart';
+import '../../util/api_cache_util.dart';
+import '../../router/router.gr.dart';
 
 @RoutePage()
 class SettingPage extends StatefulWidget {
@@ -16,12 +18,21 @@ class SettingPage extends StatefulWidget {
 class _SettingPageState extends State<SettingPage> {
   final viewModel = GetIt.instance.get<SettingViewModel>();
   final _apiKeyController = TextEditingController();
+  String _cacheSize = '0 B';
 
   @override
   void initState() {
     super.initState();
     viewModel.initSignals();
     _apiKeyController.text = viewModel.apiKey.value ?? '';
+    _loadCacheSize();
+  }
+
+  Future<void> _loadCacheSize() async {
+    final size = await ApiCacheUtil.instance.getCacheSizeFormatted();
+    if (mounted) {
+      setState(() => _cacheSize = size);
+    }
   }
 
   @override
@@ -80,6 +91,23 @@ class _SettingPageState extends State<SettingPage> {
             });
           }),
           onTap: () => _showThemeDialog(context),
+        ),
+        const Divider(),
+
+        // Cache size
+        ListTile(
+          leading: const Icon(Icons.storage),
+          title: const Text('Cache Size'),
+          subtitle: Text(_cacheSize),
+          onTap: () => _showClearCacheDialog(context),
+        ),
+
+        // View cache files
+        ListTile(
+          leading: const Icon(Icons.folder_open),
+          title: const Text('View Cache Files'),
+          subtitle: const Text('View cached API responses'),
+          onTap: () => context.router.push(const CacheFilesRoute()),
         ),
         const Divider(),
 
@@ -177,6 +205,37 @@ class _SettingPageState extends State<SettingPage> {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _showClearCacheDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Clear Cache'),
+          content: Text('Current cache size: $_cacheSize\n\nDo you want to clear all cached data?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await ApiCacheUtil.instance.clearCache();
+                await _loadCacheSize();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Cache cleared')),
+                  );
+                }
+              },
+              child: const Text('Clear'),
+            ),
+          ],
         );
       },
     );
