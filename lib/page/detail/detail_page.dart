@@ -9,6 +9,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../model/wallpaper_entity.dart';
+import '../../model/uploader_entity.dart';
 import '../../service/wall_haven_api_service.dart';
 import '../../view_model/favorite_view_model.dart';
 import '../../router/router.gr.dart';
@@ -71,6 +72,22 @@ class _DetailPageState extends State<DetailPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Storage permission denied')),
             );
+            setState(() => _isDownloading = false);
+          }
+          return;
+        }
+      }
+
+      // Check if we can save to gallery (handles iOS permission check)
+      final hasAccess = await Gal.hasAccess(toAlbum: true);
+      if (!hasAccess) {
+        final granted = await Gal.requestAccess(toAlbum: true);
+        if (!granted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Photo library access denied')),
+            );
+            setState(() => _isDownloading = false);
           }
           return;
         }
@@ -99,81 +116,6 @@ class _DetailPageState extends State<DetailPage> {
     } finally {
       if (mounted) {
         setState(() => _isDownloading = false);
-      }
-    }
-  }
-
-  Future<void> _setAsWallpaper() async {
-    if (_wallpaper == null) return;
-
-    try {
-      // Download image first
-      final file = await DefaultCacheManager().getSingleFile(_wallpaper!.path);
-
-      if (mounted) {
-        showModalBottomSheet(
-          context: context,
-          builder: (context) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.phone_android),
-                  title: const Text('Set as Home Screen'),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await _applyWallpaper(file.path, 'home');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.lock),
-                  title: const Text('Set as Lock Screen'),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await _applyWallpaper(file.path, 'lock');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.smartphone),
-                  title: const Text('Set as Both'),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await _applyWallpaper(file.path, 'both');
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      LoggerUtil.instance.e('Failed to set wallpaper', e);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed: $e')));
-      }
-    }
-  }
-
-  Future<void> _applyWallpaper(String path, String target) async {
-    // Note: Setting wallpaper requires platform-specific implementation
-    // For now, we save to gallery and show instructions
-    try {
-      await Gal.putImage(path, album: 'WallHaven');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Image saved. Please set wallpaper from gallery.'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed: $e')));
       }
     }
   }
@@ -236,6 +178,16 @@ class _DetailPageState extends State<DetailPage> {
             // backgroundColor: Colors.black,
             iconTheme: const IconThemeData(color: Colors.white),
             actions: [
+              // Similar wallpapers button
+              IconButton(
+                icon: const Icon(Icons.auto_awesome, color: Colors.white),
+                tooltip: 'Similar Wallpapers',
+                onPressed: () {
+                  context.router.push(
+                    SimilarWallpapersRoute(wallpaperId: wallpaper.id),
+                  );
+                },
+              ),
               // Favorite button
               IconButton(
                 icon: Icon(
@@ -260,11 +212,6 @@ class _DetailPageState extends State<DetailPage> {
                       )
                     : const Icon(Icons.download, color: Colors.white),
                 onPressed: _isDownloading ? null : _downloadImage,
-              ),
-              // Set wallpaper button
-              IconButton(
-                icon: const Icon(Icons.wallpaper, color: Colors.white),
-                onPressed: _setAsWallpaper,
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -447,6 +394,29 @@ class _DetailPageState extends State<DetailPage> {
                     ),
                   ],
 
+                  // Uploader section
+                  if (wallpaper.uploader != null) ...[
+                    const SizedBox(height: 24),
+                    Text(
+                      'Uploaded by',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _UploaderCard(
+                      uploader: wallpaper.uploader!,
+                      onTap: () {
+                        context.router.push(
+                          CollectionsRoute(
+                            username: wallpaper.uploader!.username,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+
                   // Bottom padding for safe area
                   SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
                 ],
@@ -466,6 +436,108 @@ String _formatNumber(int number) {
     return '${(number / 1000).toStringAsFixed(1)}K';
   }
   return number.toString();
+}
+
+class _UploaderCard extends StatelessWidget {
+  final UploaderEntity uploader;
+  final VoidCallback? onTap;
+
+  const _UploaderCard({
+    required this.uploader,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Avatar with border
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: colorScheme.primary.withValues(alpha: 0.3),
+                    width: 2,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 24,
+                  backgroundImage: CachedNetworkImageProvider(uploader.avatar.medium),
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      uploader.username,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.collections_bookmark_outlined,
+                          size: 14,
+                          color: colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'View collections',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Arrow with background
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _StatCard extends StatelessWidget {

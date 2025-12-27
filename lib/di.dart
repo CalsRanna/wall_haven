@@ -4,6 +4,7 @@ import 'view_model/home_view_model.dart';
 import 'view_model/discover_view_model.dart';
 import 'view_model/favorite_view_model.dart';
 import 'view_model/setting_view_model.dart';
+import 'view_model/collection_view_model.dart';
 
 class DI {
   static void ensureInitialized() {
@@ -23,5 +24,8 @@ class DI {
       () => FavoriteViewModel(),
     );
     instance.registerLazySingleton<SettingViewModel>(() => SettingViewModel());
+    instance.registerLazySingleton<CollectionViewModel>(
+      () => CollectionViewModel(),
+    );
   }
 }

@@ -24,6 +24,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>WallHaven needs access to save wallpapers to your photo library.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>WallHaven needs access to your photo library to save wallpapers.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

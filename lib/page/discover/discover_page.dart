@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import '../../view_model/discover_view_model.dart';
 import 'wallpaper_list_tab.dart';
+import 'top_list_tab.dart';
 
 @RoutePage()
 class DiscoverPage extends StatefulWidget {
@@ -22,7 +23,7 @@ class _DiscoverPageState extends State<DiscoverPage>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,
+      length: 4,
       vsync: this,
       initialIndex: viewModel.currentIndex.value,
     );
@@ -67,10 +68,11 @@ class _DiscoverPageState extends State<DiscoverPage>
             Tab(icon: Icon(Icons.access_time), text: 'Latest'),
             Tab(icon: Icon(Icons.trending_up), text: 'Popular'),
             Tab(icon: Icon(Icons.shuffle), text: 'Random'),
+            Tab(icon: Icon(Icons.star), text: 'Top'),
           ],
         ),
 
-        // PageView with three tabs
+        // PageView with four tabs
         Expanded(
           child: PageView(
             controller: _pageController,
@@ -79,6 +81,7 @@ class _DiscoverPageState extends State<DiscoverPage>
               WallpaperListTab(viewModel: viewModel.latestViewModel),
               WallpaperListTab(viewModel: viewModel.popularViewModel),
               WallpaperListTab(viewModel: viewModel.randomViewModel),
+              TopListTab(viewModel: viewModel.topListViewModel),
             ],
           ),
         ),

@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../model/wallpaper_entity.dart';
 import '../model/tag_entity.dart';
 import '../model/search_result_entity.dart';
+import '../model/collection_entity.dart';
 import '../util/rate_limiter.dart';
 import '../util/logger_util.dart';
 import '../util/api_cache_util.dart';
@@ -132,6 +133,41 @@ class WallHavenApiService {
   Future<TagEntity> getTag(int id) async {
     final result = await _get('/tag/$id');
     return TagEntity.fromJson(result['data'] as Map<String, dynamic>);
+  }
+
+  /// Get current user's collections (requires API key)
+  Future<List<CollectionEntity>> getMyCollections() async {
+    if (_apiKey == null || _apiKey!.isEmpty) {
+      throw ApiException(401, 'API key required for collections');
+    }
+
+    final result = await _get('/collections');
+    final data = result['data'] as List<dynamic>;
+    return data
+        .map((e) => CollectionEntity.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Get a user's public collections
+  Future<List<CollectionEntity>> getUserCollections(String username) async {
+    final result = await _get('/collections/$username');
+    final data = result['data'] as List<dynamic>;
+    return data
+        .map((e) => CollectionEntity.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Get wallpapers in a collection
+  Future<SearchResultEntity> getCollectionWallpapers({
+    required String username,
+    required int collectionId,
+    int page = 1,
+  }) async {
+    final result = await _get(
+      '/collections/$username/$collectionId',
+      params: {'page': page.toString()},
+    );
+    return SearchResultEntity.fromJson(result);
   }
 
   /// Dispose resources

@@ -10,6 +10,9 @@ class AppRouter extends RootStackRouter {
         AutoRoute(page: SearchRoute.page),
         AutoRoute(page: SettingRoute.page),
         AutoRoute(page: CacheFilesRoute.page),
+        AutoRoute(page: CollectionsRoute.page),
+        AutoRoute(page: CollectionDetailRoute.page),
+        AutoRoute(page: SimilarWallpapersRoute.page),
       ];
 }
 

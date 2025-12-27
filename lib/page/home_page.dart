@@ -26,12 +26,17 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Wall Haven'),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              context.router.push(SearchRoute());
-            },
-          ),
+          Watch((context) {
+            if (viewModel.selectedIndex.value != 0) {
+              return const SizedBox.shrink();
+            }
+            return IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                context.router.push(SearchRoute());
+              },
+            );
+          }),
         ],
       ),
       body: Watch((context) {

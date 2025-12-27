@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../model/wallpaper_entity.dart';
+import '../../model/search_filter.dart';
 import '../../service/wall_haven_api_service.dart';
 import '../../router/router.gr.dart';
+import 'search_filter_panel.dart';
 
 @RoutePage()
 class SearchPage extends StatefulWidget {
@@ -25,6 +27,7 @@ class _SearchPageState extends State<SearchPage> {
   String? _error;
   int _currentPage = 1;
   bool _hasMore = true;
+  SearchFilter _filter = const SearchFilter();
 
   @override
   void initState() {
@@ -45,7 +48,8 @@ class _SearchPageState extends State<SearchPage> {
     if (_isLoading) return;
 
     final query = _searchController.text.trim();
-    if (query.isEmpty) return;
+    // Allow search with empty query if filters are active
+    if (query.isEmpty && !_filter.hasActiveFilters) return;
 
     setState(() {
       _isLoading = true;
@@ -58,8 +62,16 @@ class _SearchPageState extends State<SearchPage> {
 
     try {
       final result = await _apiService.search(
-        query: query,
+        query: query.isNotEmpty ? query : null,
         page: _currentPage,
+        categories: _filter.categoriesParam,
+        purity: _filter.puritiesParam,
+        sorting: _filter.sorting.value,
+        order: _filter.order.value,
+        atleast: _filter.atleast,
+        resolutions: _filter.resolutions,
+        ratios: _filter.ratios,
+        colors: _filter.colors,
       );
 
       setState(() {
@@ -85,6 +97,31 @@ class _SearchPageState extends State<SearchPage> {
     await _search(loadMore: true);
   }
 
+  void _showFilterPanel() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SearchFilterPanel(
+        filter: _filter,
+        onFilterChanged: (filter) {
+          _filter = filter;
+        },
+        onApply: () {
+          Navigator.pop(context);
+          setState(() {});
+          // Allow search without query when filters are active
+          if (_searchController.text.isNotEmpty || _filter.hasActiveFilters) {
+            _search();
+          }
+        },
+        onReset: () {
+          _filter = const SearchFilter();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,6 +144,29 @@ class _SearchPageState extends State<SearchPage> {
           onSubmitted: (_) => _search(),
         ),
         actions: [
+          // Filter button with indicator
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.tune),
+                onPressed: _showFilterPanel,
+              ),
+              if (_filter.hasActiveFilters)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: _search,
@@ -148,6 +208,14 @@ class _SearchPageState extends State<SearchPage> {
               'Search for wallpapers',
               style: TextStyle(color: Colors.grey[600]),
             ),
+            if (_filter.hasActiveFilters) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: _showFilterPanel,
+                icon: const Icon(Icons.tune, size: 18),
+                label: const Text('Filters active'),
+              ),
+            ],
           ],
         ),
       );

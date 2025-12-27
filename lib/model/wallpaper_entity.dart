@@ -1,5 +1,6 @@
 import 'thumbs_entity.dart';
 import 'tag_entity.dart';
+import 'uploader_entity.dart';
 
 /// Wallpaper Entity
 class WallpaperEntity {
@@ -22,6 +23,7 @@ class WallpaperEntity {
   final String path;
   final ThumbsEntity thumbs;
   final List<TagEntity>? tags;
+  final UploaderEntity? uploader;
 
   WallpaperEntity({
     required this.id,
@@ -43,6 +45,7 @@ class WallpaperEntity {
     required this.path,
     required this.thumbs,
     this.tags,
+    this.uploader,
   });
 
   factory WallpaperEntity.fromJson(Map<String, dynamic> json) {
@@ -69,6 +72,9 @@ class WallpaperEntity {
           ? (json['tags'] as List<dynamic>)
               .map((e) => TagEntity.fromJson(e as Map<String, dynamic>))
               .toList()
+          : null,
+      uploader: json['uploader'] != null
+          ? UploaderEntity.fromJson(json['uploader'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -100,6 +106,7 @@ class WallpaperEntity {
       'path': path,
       'thumbs': thumbs.toJson(),
       'tags': tags?.map((e) => e.toJson()).toList(),
+      'uploader': uploader?.toJson(),
     };
   }
 
