@@ -6,6 +6,8 @@ import '../../view_model/setting_view_model.dart';
 import '../../service/wall_haven_api_service.dart';
 import '../../util/api_cache_util.dart';
 import '../../router/router.gr.dart';
+import '../../widgets/section_header.dart';
+import '../../widgets/bottom_sheet_handle.dart';
 
 @RoutePage()
 class SettingPage extends StatefulWidget {
@@ -49,7 +51,7 @@ class _SettingPageState extends State<SettingPage> {
       padding: const EdgeInsets.all(16),
       children: [
         // Account Section
-        _SectionHeader(title: 'Account'),
+        const SectionHeader(title: 'Account'),
         const SizedBox(height: 8),
         _SettingsCard(
           children: [
@@ -87,7 +89,7 @@ class _SettingPageState extends State<SettingPage> {
         const SizedBox(height: 24),
 
         // Appearance Section
-        _SectionHeader(title: 'Appearance'),
+        const SectionHeader(title: 'Appearance'),
         const SizedBox(height: 8),
         _SettingsCard(
           children: [
@@ -117,7 +119,7 @@ class _SettingPageState extends State<SettingPage> {
         const SizedBox(height: 24),
 
         // Storage Section
-        _SectionHeader(title: 'Storage'),
+        const SectionHeader(title: 'Storage'),
         const SizedBox(height: 8),
         _SettingsCard(
           children: [
@@ -145,7 +147,7 @@ class _SettingPageState extends State<SettingPage> {
         const SizedBox(height: 24),
 
         // About Section
-        _SectionHeader(title: 'About'),
+        const SectionHeader(title: 'About'),
         const SizedBox(height: 8),
         _SettingsCard(
           children: [
@@ -247,14 +249,7 @@ class _SettingPageState extends State<SettingPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            const BottomSheetHandle(),
             const SizedBox(height: 24),
             Container(
               width: 80,
@@ -317,28 +312,6 @@ class _SettingPageState extends State<SettingPage> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// Section Header
-class _SectionHeader extends StatelessWidget {
-  final String title;
-
-  const _SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Text(
-        title.toUpperCase(),
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
         ),
       ),
     );
@@ -478,16 +451,7 @@ class _ApiKeyBottomSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
+          const Center(child: BottomSheetHandle()),
           const SizedBox(height: 24),
           Text(
             'API Key',
@@ -563,14 +527,7 @@ class _ThemeBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colorScheme.outlineVariant,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+          const BottomSheetHandle(),
           const SizedBox(height: 24),
           Text(
             'Choose Theme',

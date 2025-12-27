@@ -14,6 +14,8 @@ import '../../service/wall_haven_api_service.dart';
 import '../../view_model/favorite_view_model.dart';
 import '../../router/router.gr.dart';
 import '../../util/logger_util.dart';
+import '../../widgets/section_header.dart';
+import '../../widgets/error_state_view.dart';
 
 @RoutePage()
 class DetailPage extends StatefulWidget {
@@ -145,20 +147,9 @@ class _DetailPageState extends State<DetailPage> {
     if (_error != null) {
       return Scaffold(
         appBar: AppBar(),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48),
-              const SizedBox(height: 16),
-              Text(_error!),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _loadWallpaper,
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
+        body: ErrorStateView(
+          message: _error,
+          onRetry: _loadWallpaper,
         ),
       );
     }
@@ -317,13 +308,7 @@ class _DetailPageState extends State<DetailPage> {
                   const SizedBox(height: 24),
 
                   // Colors section
-                  Text(
-                    'Colors',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+                  const SectionHeader(title: 'Colors', uppercase: false),
                   const SizedBox(height: 12),
                   SizedBox(
                     height: 48,
@@ -371,13 +356,7 @@ class _DetailPageState extends State<DetailPage> {
                   // Tags section
                   if (wallpaper.tags != null && wallpaper.tags!.isNotEmpty) ...[
                     const SizedBox(height: 24),
-                    Text(
-                      'Tags',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                    const SectionHeader(title: 'Tags', uppercase: false),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
@@ -397,13 +376,7 @@ class _DetailPageState extends State<DetailPage> {
                   // Uploader section
                   if (wallpaper.uploader != null) ...[
                     const SizedBox(height: 24),
-                    Text(
-                      'Uploaded by',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                    const SectionHeader(title: 'Uploaded by', uppercase: false),
                     const SizedBox(height: 12),
                     _UploaderCard(
                       uploader: wallpaper.uploader!,

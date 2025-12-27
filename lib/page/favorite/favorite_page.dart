@@ -5,6 +5,8 @@ import 'package:signals/signals_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../view_model/favorite_view_model.dart';
 import '../../router/router.gr.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/loading_placeholder.dart';
 
 @RoutePage()
 class FavoritePage extends StatefulWidget {
@@ -25,21 +27,18 @@ class _FavoritePageState extends State<FavoritePage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Watch((context) {
       if (viewModel.isLoading.value && viewModel.favorites.value.isEmpty) {
         return const Center(child: CircularProgressIndicator());
       }
 
       if (viewModel.favorites.value.isEmpty) {
-        return const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.favorite_border, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
-              Text('No favorites yet', style: TextStyle(color: Colors.grey)),
-            ],
-          ),
+        return const EmptyStateView(
+          icon: Icons.favorite_border,
+          title: 'No favorites yet',
+          description: 'Tap the heart icon on any wallpaper to add it to your favorites.',
         );
       }
 
@@ -81,15 +80,13 @@ class _FavoritePageState extends State<FavoritePage> {
                     height: double.infinity,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
+                    placeholder: (context, url) => const LoadingPlaceholder(),
                     errorWidget: (context, url, error) => Container(
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.error),
+                      color: colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        Icons.error_outline_rounded,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ),

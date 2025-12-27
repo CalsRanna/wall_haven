@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:signals/signals_flutter.dart';
 import '../../view_model/discover_view_model.dart';
 import '../../router/router.gr.dart';
+import '../../widgets/error_state_view.dart';
+import '../../widgets/empty_state_view.dart';
 import 'wallpaper_grid.dart';
 
 /// Top List tab with time range selector
@@ -52,20 +54,9 @@ class _TopListTabState extends State<TopListTab>
 
   Widget _buildContent(TopListViewModel vm) {
     if (vm.error.value != null && vm.wallpapers.value.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48),
-            const SizedBox(height: 16),
-            Text(vm.error.value!),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: vm.refresh,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+      return ErrorStateView(
+        message: vm.error.value,
+        onRetry: vm.refresh,
       );
     }
 
@@ -74,7 +65,11 @@ class _TopListTabState extends State<TopListTab>
     }
 
     if (vm.wallpapers.value.isEmpty) {
-      return const Center(child: Text('No wallpapers'));
+      return const EmptyStateView(
+        icon: Icons.image_not_supported_outlined,
+        title: 'No wallpapers',
+        description: 'Try selecting a different time range.',
+      );
     }
 
     return RefreshIndicator(

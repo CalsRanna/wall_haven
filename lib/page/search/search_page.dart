@@ -6,6 +6,9 @@ import '../../model/wallpaper_entity.dart';
 import '../../model/search_filter.dart';
 import '../../service/wall_haven_api_service.dart';
 import '../../router/router.gr.dart';
+import '../../widgets/empty_state_view.dart';
+import '../../widgets/error_state_view.dart';
+import '../../widgets/loading_placeholder.dart';
 import 'search_filter_panel.dart';
 
 @RoutePage()
@@ -178,46 +181,33 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildBody() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (_isLoading && _wallpapers.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null && _wallpapers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48),
-            const SizedBox(height: 16),
-            Text(_error!),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: _search, child: const Text('Retry')),
-          ],
-        ),
+      return ErrorStateView(
+        message: _error,
+        onRetry: _search,
       );
     }
 
     if (_wallpapers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Search for wallpapers',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            if (_filter.hasActiveFilters) ...[
-              const SizedBox(height: 8),
-              TextButton.icon(
+      return EmptyStateView(
+        icon: Icons.search,
+        title: 'Search for wallpapers',
+        description: _filter.hasActiveFilters
+            ? 'Filters are active. Tap to adjust.'
+            : null,
+        action: _filter.hasActiveFilters
+            ? TextButton.icon(
                 onPressed: _showFilterPanel,
                 icon: const Icon(Icons.tune, size: 18),
                 label: const Text('Filters active'),
-              ),
-            ],
-          ],
-        ),
+              )
+            : null,
       );
     }
 
@@ -260,13 +250,13 @@ class _SearchPageState extends State<SearchPage> {
               child: CachedNetworkImage(
                 imageUrl: wallpaper.thumbs.large,
                 fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[300],
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
+                placeholder: (context, url) => const LoadingPlaceholder(),
                 errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.error),
+                  color: colorScheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ),

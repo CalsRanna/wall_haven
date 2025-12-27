@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import '../../model/search_filter.dart';
 import '../../service/wall_haven_api_service.dart';
+import '../../widgets/section_header.dart';
+import '../../widgets/bottom_sheet_handle.dart';
 import 'color_picker_widget.dart';
 
 /// Bottom sheet filter panel for advanced search options
@@ -56,14 +58,9 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
           child: Column(
             children: [
               // Drag handle
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: BottomSheetHandle(),
               ),
 
               // Header
@@ -97,7 +94,7 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
                   padding: const EdgeInsets.all(16),
                   children: [
                     // Categories
-                    _SectionTitle(title: 'Categories'),
+                    const SectionHeader(title: 'Categories', uppercase: false),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -130,7 +127,7 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
                     const SizedBox(height: 24),
 
                     // Purity
-                    _SectionTitle(title: 'Purity'),
+                    const SectionHeader(title: 'Purity', uppercase: false),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -191,7 +188,7 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
                     const SizedBox(height: 24),
 
                     // Sorting
-                    _SectionTitle(title: 'Sort By'),
+                    const SectionHeader(title: 'Sort By', uppercase: false),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -249,7 +246,7 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
                     const SizedBox(height: 24),
 
                     // Resolution
-                    _SectionTitle(title: 'Minimum Resolution'),
+                    const SectionHeader(title: 'Minimum Resolution', uppercase: false),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -283,7 +280,7 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
                     const SizedBox(height: 24),
 
                     // Aspect ratio
-                    _SectionTitle(title: 'Aspect Ratio'),
+                    const SectionHeader(title: 'Aspect Ratio', uppercase: false),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -317,7 +314,7 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
                     const SizedBox(height: 24),
 
                     // Color
-                    _SectionTitle(title: 'Color'),
+                    const SectionHeader(title: 'Color', uppercase: false),
                     const SizedBox(height: 8),
                     ColorPickerWidget(
                       selectedColor: _filter.colors,
@@ -352,23 +349,6 @@ class _SearchFilterPanelState extends State<SearchFilterPanel> {
           ),
         );
       },
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String title;
-
-  const _SectionTitle({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.5,
-      ),
     );
   }
 }
