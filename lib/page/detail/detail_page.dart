@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +6,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:gal/gal.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../../model/wallpaper_entity.dart';
 import '../../model/uploader_entity.dart';
 import '../../service/wall_haven_api_service.dart';
@@ -66,28 +64,14 @@ class _DetailPageState extends State<DetailPage> {
     setState(() => _isDownloading = true);
 
     try {
-      // Request storage permission on Android
-      if (Platform.isAndroid) {
-        final status = await Permission.photos.request();
-        if (!status.isGranted) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Storage permission denied')),
-            );
-            setState(() => _isDownloading = false);
-          }
-          return;
-        }
-      }
-
-      // Check if we can save to gallery (handles iOS permission check)
+      // 请求相册访问权限（gal 库会根据 Android 版本自动处理）
       final hasAccess = await Gal.hasAccess(toAlbum: true);
       if (!hasAccess) {
         final granted = await Gal.requestAccess(toAlbum: true);
         if (!granted) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Photo library access denied')),
+              const SnackBar(content: Text('相册访问权限被拒绝')),
             );
             setState(() => _isDownloading = false);
           }
